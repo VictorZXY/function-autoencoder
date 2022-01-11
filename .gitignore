@@ -112,3 +112,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Pycharm stuff
+.idea
+.idea/
+
+# Project-specific (playgrounds, etc.)
+playground.py
