@@ -117,5 +117,9 @@ dmypy.json
 .idea
 .idea/
 
-# Project-specific (playgrounds, etc.)
+# Project-specific (playgrounds, results, etc.)
 playground.py
+models
+models/
+results
+results/

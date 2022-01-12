@@ -26,7 +26,7 @@ def MLP(input_dim, out_dims):
     return nn.Sequential(*layers)
 
 
-def plot_functions(target_x, target_y, context_x, context_y, pred_y, σ_y):
+def plot_functions(target_x, target_y, context_x, context_y, pred_y, σ_y, filepath=None):
     """
     Plots the predicted mean and variance and the context points.
 
@@ -42,6 +42,8 @@ def plot_functions(target_x, target_y, context_x, context_y, pred_y, σ_y):
         predicted means of the y values at the target points in target_x.
     :param σ: An array of shape [batch_size, num_targets, 1] that contains the
         predicted std. dev. of the y values at the target points in target_x.
+    :param filepath: A string containing the path of the file where the plot is
+        to be saved.
     """
 
     # Plot everything
@@ -61,4 +63,6 @@ def plot_functions(target_x, target_y, context_x, context_y, pred_y, σ_y):
     plt.xticks([-2, 0, 2], fontsize=12)
     plt.ylim([-2, 2])
     ax = plt.gca()
+    if filepath is not None:
+        plt.savefig(filepath, bbox_inches='tight')
     plt.show()

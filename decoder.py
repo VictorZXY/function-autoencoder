@@ -62,7 +62,7 @@ class Decoder(nn.Module):
         μ, σ_raw = torch.split(μσ, self.y_dim, dim=-1)
 
         # Bound the standard deviation
-        σ = 0.1 + 0.9 * torch.nn.functional.softplus(σ_raw)
+        σ = torch.nn.functional.softplus(σ_raw)
 
         # Get the distribution
         dist = torch.distributions.independent.Independent(

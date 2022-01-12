@@ -74,7 +74,7 @@ class LatentEncoder(nn.Module):
         σ_raw = self.g_σ(output)
 
         # Bound the standard deviation
-        σ = 0.1 + 0.9 * torch.nn.functional.softplus(σ_raw)
+        σ = torch.nn.functional.softplus(σ_raw)
 
         return torch.distributions.normal.Normal(loc=μ, scale=σ)
 

@@ -1,3 +1,5 @@
+import pickle
+
 import torch
 import torch.optim as optim
 
@@ -90,6 +92,8 @@ if __name__ == '__main__':
     optimiser = optim.Adam(model.parameters(), lr=1e-4)
 
     # Train and plot
+    loglik_curve = []
+
     for epoch in range(TOTAL_EPOCHS):
         optimiser.zero_grad()
 
@@ -115,6 +119,7 @@ if __name__ == '__main__':
                                             target_x=train_target_x,
                                             target_y=train_target_y))
 
+        loglik_curve.append(-loss)
         loss.backward()
         optimiser.step()
 
@@ -168,4 +173,9 @@ if __name__ == '__main__':
                            context_x=test_context_x.detach(),
                            context_y=test_context_y.detach(),
                            pred_y=μ.detach(),
-                           σ_y=σ.detach())
+                           σ_y=σ.detach(),
+                           filepath=f"results/{MODEL_TYPE.replace(' + ', '')}/{epoch}.png")
+
+    torch.save(model.state_dict(), f"models/{MODEL_TYPE.replace(' + ', '')}.pt")
+    with open(f"results/{MODEL_TYPE.replace(' + ', '')}/loglik_curve.pickle", 'wb') as f:
+        pickle.dump(loglik_curve, f)
