@@ -1,7 +1,9 @@
 import pickle
 
+import numpy as np
 import torch
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
 
 from data_generator import GPCurvesReader
 from decoder import Decoder
@@ -10,38 +12,51 @@ from latent_encoder import LatentEncoder
 from util import plot_functions
 
 TOTAL_EPOCHS = 100000
-REFRESH_DATA_AFTER = 100
+REFRESH_DATA_AFTER = {
+    'Latent': 5000,
+    'Deterministic': 100,
+    'LatentDeterministic': 500
+}
 PLOT_AFTER = 10000
-MAX_CONTEXT_POINTS = 50
-HIDDEN_SIZE = 128
-ENCODER_LAYERS = 4
-DECODER_LAYERS = 2
-MODEL_TYPE = 'Latent + Deterministic'  # ['Latent', 'Deterministic', 'Latent + Deterministic']
+MAX_CONTEXT_POINTS = [10, 50, 100]
+TRAIN_BATCH_SIZE = 16
+TEST_BATCH_SIZE = 1
+LAYER_DIM = 128
+ENCODER_NUM_LAYERS = 4
+DECODER_NUM_LAYERS = 2
+MODEL_TYPES = ['Latent', 'Deterministic', 'LatentDeterministic']
 RANDOM_KERNEL_PARAMS = True
 
-# Train dataset
-dataset_train = GPCurvesReader(
-    batch_size=16, max_num_context=MAX_CONTEXT_POINTS,
-    random_kernel_parameters=RANDOM_KERNEL_PARAMS)
 
-# Test dataset
-dataset_test = GPCurvesReader(
-    batch_size=1, max_num_context=MAX_CONTEXT_POINTS, testing=True,
-    random_kernel_parameters=RANDOM_KERNEL_PARAMS)
-data_test = dataset_test.generate_curves()
+def train(total_epochs, refresh_data_after, plot_after, max_context_points,
+          train_batch_size, test_batch_size, layer_dim, encoder_num_layers,
+          decoder_num_layers, model_type, random_kernel_params, seed=2022):
+    # initialise seed
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
-# Sizes of the layers of the MLPs for the encoders and decoder
-# The final output layer of the decoder outputs two values, one for the mean and
-# one for the standard deviation of the prediction at the target location
-latent_encoder_out_dims = [HIDDEN_SIZE] * ENCODER_LAYERS
-representation_dim = HIDDEN_SIZE
-deterministic_encoder_out_dims = [HIDDEN_SIZE] * ENCODER_LAYERS
-decoder_out_dims = [HIDDEN_SIZE] * DECODER_LAYERS + [2]
+    # Training dataset
+    dataset_train = GPCurvesReader(
+        batch_size=train_batch_size, max_num_context=max_context_points,
+        random_kernel_parameters=random_kernel_params)
 
-if __name__ == '__main__':
+    # Test dataset
+    dataset_test = GPCurvesReader(
+        batch_size=test_batch_size, max_num_context=max_context_points,
+        testing=True, random_kernel_parameters=random_kernel_params)
+    data_test = dataset_test.generate_curves()
+
+    # Sizes of the layers of the MLPs for the encoders and decoder
+    # The final output layer of the decoder outputs two values, one for the mean and
+    # one for the standard deviation of the prediction at the target location
+    latent_encoder_out_dims = [layer_dim] * encoder_num_layers
+    representation_dim = layer_dim
+    deterministic_encoder_out_dims = [layer_dim] * encoder_num_layers
+    decoder_out_dims = [layer_dim] * decoder_num_layers + [2]
+
     # Define the model and the loss:
     # Latent encoder only
-    if MODEL_TYPE == 'Latent':
+    if model_type == 'Latent':
         model = LatentEncoder(
             x_dim=1,
             y_dim=1,
@@ -54,7 +69,7 @@ if __name__ == '__main__':
             )
         )
     # Deterministic encoder only
-    elif MODEL_TYPE == 'Deterministic':
+    elif model_type == 'Deterministic':
         model = DeterministicEncoder(
             x_dim=1,
             y_dim=1,
@@ -67,7 +82,7 @@ if __name__ == '__main__':
             )
         )
     # Latent encoder + deterministic encoder
-    elif MODEL_TYPE == 'Latent + Deterministic':
+    elif model_type == 'LatentDeterministic':
         model = LatentEncoder(
             x_dim=1,
             y_dim=1,
@@ -86,19 +101,24 @@ if __name__ == '__main__':
             )
         )
     else:
-        raise NameError("MODEL_TYPE not among ['Latent', 'Deterministic', 'Latent + Deterministic']")
+        raise NameError("model_type not among ['Latent', 'Deterministic', 'LatentDeterministic']")
 
     # Set up the optimizer
     optimiser = optim.Adam(model.parameters(), lr=1e-4)
 
+    # Set up TensorBoard logs
+    tensorboard_comment = f'{model_type}_{refresh_data_after}_{max_context_points}'
+    tensorboard_writer = SummaryWriter(log_dir='results/TensorBoard',
+                                       comment=tensorboard_comment)
+
     # Train and plot
     loglik_curve = []
 
-    for epoch in range(TOTAL_EPOCHS):
+    for epoch in range(total_epochs):
         optimiser.zero_grad()
 
         # Get training datapoints
-        if epoch % REFRESH_DATA_AFTER == 0:
+        if epoch % refresh_data_after == 0:
             data_train = dataset_train.generate_curves()
             train_context_x = data_train.context_x
             train_context_y = data_train.context_y
@@ -106,7 +126,7 @@ if __name__ == '__main__':
             train_target_y = data_train.target_y
             train_num_targets = data_train.num_total_points
 
-        if MODEL_TYPE == 'Latent' or MODEL_TYPE == 'Latent + Deterministic':
+        if model_type == 'Latent' or model_type == 'LatentDeterministic':
             loss = -torch.mean(model.loglik_lb(context_x=train_context_x,
                                                context_y=train_context_y,
                                                num_targets=train_num_targets,
@@ -119,12 +139,13 @@ if __name__ == '__main__':
                                             target_x=train_target_x,
                                             target_y=train_target_y))
 
+        tensorboard_writer.add_scalar('Log likelihood', -loss, epoch)
         loglik_curve.append(-loss)
         loss.backward()
         optimiser.step()
 
         # Plot the predictions in `PLOT_AFTER` intervals
-        if epoch % PLOT_AFTER == 0:
+        if epoch % plot_after == 0:
             # Get testing datapoints
             test_context_x = data_test.context_x
             test_context_y = data_test.context_y
@@ -133,7 +154,7 @@ if __name__ == '__main__':
             test_num_targets = data_test.num_total_points
 
             # Get the log likelihood and representation
-            if MODEL_TYPE == 'Latent':
+            if model_type == 'Latent':
                 loglik = torch.mean(model.loglik_lb(context_x=test_context_x,
                                                     context_y=test_context_y,
                                                     num_targets=test_num_targets,
@@ -143,7 +164,7 @@ if __name__ == '__main__':
                 z = Z.sample().detach()
                 z = torch.unsqueeze(z, dim=1).repeat(1, test_num_targets, 1)
                 representation = z
-            elif MODEL_TYPE == 'Latent + Deterministic':
+            elif model_type == 'LatentDeterministic':
                 loglik = torch.mean(model.loglik_lb(context_x=test_context_x,
                                                     context_y=test_context_y,
                                                     num_targets=test_num_targets,
@@ -174,8 +195,29 @@ if __name__ == '__main__':
                            context_y=test_context_y.detach(),
                            pred_y=μ.detach(),
                            σ_y=σ.detach(),
-                           filepath=f"results/{MODEL_TYPE.replace(' + ', '')}/{epoch}.png")
+                           save_to_filepath=f'results/{model_type}_{max_context_points}/{epoch}.png')
 
-    torch.save(model.state_dict(), f"models/{MODEL_TYPE.replace(' + ', '')}.pt")
-    with open(f"results/{MODEL_TYPE.replace(' + ', '')}/loglik_curve.pickle", 'wb') as f:
+    tensorboard_writer.flush()
+    torch.save(model.state_dict(), f'models/{model_type}_{max_context_points}.pt')
+    with open(f'results/{model_type}_{max_context_points}/loglik_curve.pickle', 'wb') as f:
         pickle.dump(loglik_curve, f)
+
+
+if __name__ == '__main__':
+    for model_type in MODEL_TYPES:
+        for max_context_points in MAX_CONTEXT_POINTS:
+            print(f'Model type: {model_type}, max context points: {max_context_points}')
+            print()
+            train(total_epochs=TOTAL_EPOCHS,
+                  refresh_data_after=REFRESH_DATA_AFTER[model_type],
+                  plot_after=PLOT_AFTER,
+                  max_context_points=max_context_points,
+                  train_batch_size=TRAIN_BATCH_SIZE,
+                  test_batch_size=TEST_BATCH_SIZE,
+                  layer_dim=LAYER_DIM,
+                  encoder_num_layers=ENCODER_NUM_LAYERS,
+                  decoder_num_layers=DECODER_NUM_LAYERS,
+                  model_type=model_type,
+                  random_kernel_params=RANDOM_KERNEL_PARAMS)
+            print()
+            print('========================================================')

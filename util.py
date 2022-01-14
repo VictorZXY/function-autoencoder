@@ -26,7 +26,8 @@ def MLP(input_dim, out_dims):
     return nn.Sequential(*layers)
 
 
-def plot_functions(target_x, target_y, context_x, context_y, pred_y, σ_y, filepath=None):
+def plot_functions(target_x, target_y, context_x, context_y, pred_y, σ_y,
+                   save_to_filepath=None):
     """
     Plots the predicted mean and variance and the context points.
 
@@ -38,12 +39,12 @@ def plot_functions(target_x, target_y, context_x, context_y, pred_y, σ_y, filep
         the x values of the context points.
     :param context_y: An array of shape [batch_size, num_contexts, 1] that contains
         the y values of the context points.
-    :param pred_y: An array of shape [batch_size, num_targets, 1] that contains the
-        predicted means of the y values at the target points in target_x.
+    :param pred_y: An array of shape [batch_size, num_targets, 1] that contains
+        the predicted means of the y values at the target points in target_x.
     :param σ: An array of shape [batch_size, num_targets, 1] that contains the
         predicted std. dev. of the y values at the target points in target_x.
-    :param filepath: A string containing the path of the file where the plot is
-        to be saved.
+    :param save_to_filepath: A string containing the path of the file where the
+        plot is to be saved.
     """
 
     # Plot everything
@@ -63,6 +64,6 @@ def plot_functions(target_x, target_y, context_x, context_y, pred_y, σ_y, filep
     plt.xticks([-2, 0, 2], fontsize=12)
     plt.ylim([-2, 2])
     ax = plt.gca()
-    if filepath is not None:
-        plt.savefig(filepath, bbox_inches='tight')
+    if save_to_filepath is not None:
+        plt.savefig(save_to_filepath, bbox_inches='tight')
     plt.show()
