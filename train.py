@@ -24,7 +24,7 @@ TEST_BATCH_SIZE = 1
 LAYER_DIM = 128
 ENCODER_NUM_LAYERS = 4
 DECODER_NUM_LAYERS = 2
-MODEL_TYPES = ['Latent', 'Deterministic', 'LatentDeterministic']
+MODEL_TYPES = ['Deterministic', 'LatentDeterministic']  # ['Latent', 'Deterministic', 'LatentDeterministic']
 RANDOM_KERNEL_PARAMS = True
 
 
@@ -182,7 +182,9 @@ def train(total_epochs, refresh_data_after, plot_after, max_context_points,
                                                  num_targets=test_num_targets,
                                                  target_x=test_target_x,
                                                  target_y=test_target_y).detach())
-                representation = model(test_context_x, test_context_y).detach()
+                r = model(test_context_x, test_context_y).detach()
+                r = torch.unsqueeze(r, dim=1).repeat(1, test_num_targets, 1)
+                representation = r
 
             dist, μ, σ = model.f(representation, test_target_x)
 
