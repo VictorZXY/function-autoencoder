@@ -11,7 +11,7 @@ from deterministic_encoder import DeterministicEncoder
 from latent_encoder import LatentEncoder
 from util import plot_functions
 
-TOTAL_EPOCHS = 100000
+TOTAL_EPOCHS = 100001
 REFRESH_DATA_AFTER = {
     'Latent': 5000,
     'Deterministic': 100,
@@ -54,7 +54,7 @@ def train(total_epochs, refresh_data_after, plot_after, max_context_points,
     deterministic_encoder_out_dims = [layer_dim] * encoder_num_layers
     decoder_out_dims = [layer_dim] * decoder_num_layers + [2]
 
-    # Define the model and the loss:
+    # Define the model:
     # Latent encoder only
     if model_type == 'Latent':
         model = LatentEncoder(
