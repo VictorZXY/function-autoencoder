@@ -157,21 +157,21 @@ def plot_loglik_curves(total_epochs, max_context_points, model_types):
     fig, axes = plt.subplots(1, len(max_context_points), figsize=(20, 4.8), sharey='all')
 
     df = pd.DataFrame({})
-    for i, max_context_points in enumerate(max_context_points):
+    for i, max_context_point in enumerate(max_context_points):
         for model_type in model_types:
-            model_name = f'{model_type}_{max_context_points}'
+            model_name = f'{model_type}_{max_context_point}'
             with open(f'results/{model_name}/loglik_curve.pickle', 'rb') as f:
                 loglik_curve = pickle.load(f)
                 df[model_name] = torch.stack(loglik_curve).detach().numpy()
                 df[model_name] = df[model_name].ewm(alpha=0.001).mean()
 
     epochs = np.arange(total_epochs)
-    for i, max_context_points in enumerate(max_context_points):
+    for i, max_context_point in enumerate(max_context_points):
         for model_type in model_types:
-            model_name = f'{model_type}_{max_context_points}'
+            model_name = f'{model_type}_{max_context_point}'
             axes[i].plot(epochs, df[model_name], label=model_type)
         axes[i].legend()
-        axes[i].set_title(f'Max context points = {max_context_points}')
+        axes[i].set_title(f'Max context points = {max_context_point}')
 
     axes[0].set_ylabel('Log likelihood')
     plt.show()
