@@ -13,18 +13,22 @@ from util import plot_functions
 
 TOTAL_EPOCHS = 100001
 REFRESH_DATA_AFTER = {
-    'Latent': 5000,
+    'Latent': 1000000,  # Do not refresh data for latent encoder
     'Deterministic': 100,
     'LatentDeterministic': 500
 }
 PLOT_AFTER = 10000
 MAX_CONTEXT_POINTS = [10, 50, 100]
-TRAIN_BATCH_SIZE = 16
+TRAIN_BATCH_SIZES = {
+    'Latent': 256,
+    'Deterministic': 16,
+    'LatentDeterministic': 16
+}
 TEST_BATCH_SIZE = 1
 LAYER_DIM = 128
 ENCODER_NUM_LAYERS = 4
 DECODER_NUM_LAYERS = 2
-MODEL_TYPES = ['Deterministic', 'LatentDeterministic']  # ['Latent', 'Deterministic', 'LatentDeterministic']
+MODEL_TYPES = ['Latent', 'Deterministic', 'LatentDeterministic']
 RANDOM_KERNEL_PARAMS = True
 
 
@@ -214,7 +218,7 @@ if __name__ == '__main__':
                   refresh_data_after=REFRESH_DATA_AFTER[model_type],
                   plot_after=PLOT_AFTER,
                   max_context_points=max_context_points,
-                  train_batch_size=TRAIN_BATCH_SIZE,
+                  train_batch_size=TRAIN_BATCH_SIZES[model_type],
                   test_batch_size=TEST_BATCH_SIZE,
                   layer_dim=LAYER_DIM,
                   encoder_num_layers=ENCODER_NUM_LAYERS,
