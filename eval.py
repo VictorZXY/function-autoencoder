@@ -19,6 +19,11 @@ LAYER_DIM = 128
 ENCODER_NUM_LAYERS = 4
 DECODER_NUM_LAYERS = 2
 MODEL_TYPES = ['Latent', 'Deterministic', 'LatentDeterministic']
+# SMOOTHING_ALPHA = {
+#     'Latent': 0.0001,
+#     'Deterministic': 0.001,
+#     'LatentDeterministic': 0.0001
+# }
 
 
 def eval_model(model_path, total_epochs, max_context_points, train_batch_size,
@@ -153,8 +158,10 @@ def eval_model(model_path, total_epochs, max_context_points, train_batch_size,
                        save_to_filepath=f'results/{model_type}_{max_context_points}/{total_epochs}.png')
 
 
-def plot_loglik_curves(total_epochs, max_context_points, model_types):
+def plot_loglik_curves(total_epochs, max_context_points, model_types,
+                       save_to_filepath=None):
     fig, axes = plt.subplots(1, len(max_context_points), figsize=(20, 4.8), sharey='all')
+    plt.ylim([-1.25, 0.25])
 
     df = pd.DataFrame({})
     for i, max_context_point in enumerate(max_context_points):
@@ -162,8 +169,9 @@ def plot_loglik_curves(total_epochs, max_context_points, model_types):
             model_name = f'{model_type}_{max_context_point}'
             with open(f'results/{model_name}/loglik_curve.pickle', 'rb') as f:
                 loglik_curve = pickle.load(f)
-                df[model_name] = torch.stack(loglik_curve).detach().numpy()
-                df[model_name] = df[model_name].ewm(alpha=0.001).mean()
+                loglik_curve = torch.stack(loglik_curve).detach().numpy()
+                df[model_name] = np.clip(loglik_curve, a_min=-10, a_max=None)
+                df[model_name] = df[model_name].ewm(alpha=0.0001).mean()
 
     epochs = np.arange(total_epochs)
     for i, max_context_point in enumerate(max_context_points):
@@ -171,16 +179,20 @@ def plot_loglik_curves(total_epochs, max_context_points, model_types):
             model_name = f'{model_type}_{max_context_point}'
             axes[i].plot(epochs, df[model_name], label=model_type)
         axes[i].legend()
-        axes[i].set_title(f'Max context points = {max_context_point}')
+        axes[i].set_title(f'Max context points = {max_context_point}', fontsize=16)
 
-    axes[0].set_ylabel('Log likelihood')
+    axes[0].set_ylabel('Log likelihood', fontsize=16)
+
+    if save_to_filepath is not None:
+        plt.savefig(save_to_filepath, bbox_inches='tight')
     plt.show()
 
 
 if __name__ == '__main__':
     plot_loglik_curves(total_epochs=TOTAL_EPOCHS,
                        max_context_points=MAX_CONTEXT_POINTS,
-                       model_types=MODEL_TYPES)
+                       model_types=MODEL_TYPES,
+                       save_to_filepath='results/loglik_curves.png')
 
     # eval_model(model_path='models/LatentDeterministic_50.pt',
     #            total_epochs=TOTAL_EPOCHS,
