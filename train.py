@@ -13,14 +13,14 @@ from util import plot_functions
 
 TOTAL_EPOCHS = 100001
 REFRESH_DATA_AFTER = {
-    'Latent': 1000000,  # Do not refresh data for latent encoder
+    'Latent': 5000,  # 1000000 if no data refresh for latent encoder
     'Deterministic': 100,
     'LatentDeterministic': 500
 }
 PLOT_AFTER = 10000
 MAX_CONTEXT_POINTS = [10, 50, 100]
 TRAIN_BATCH_SIZES = {
-    'Latent': 256,
+    'Latent': 16,  # 256 for no data refresh
     'Deterministic': 16,
     'LatentDeterministic': 16
 }

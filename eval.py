@@ -19,11 +19,11 @@ LAYER_DIM = 128
 ENCODER_NUM_LAYERS = 4
 DECODER_NUM_LAYERS = 2
 MODEL_TYPES = ['Latent', 'Deterministic', 'LatentDeterministic']
-# SMOOTHING_ALPHA = {
-#     'Latent': 0.0001,
-#     'Deterministic': 0.001,
-#     'LatentDeterministic': 0.0001
-# }
+SMOOTHING_ALPHA = {
+    'Latent': 0.00001,
+    'Deterministic': 0.0001,
+    'LatentDeterministic': 0.0001
+}
 
 
 def eval_model(model_path, total_epochs, max_context_points, train_batch_size,
@@ -171,7 +171,7 @@ def plot_loglik_curves(total_epochs, max_context_points, model_types,
                 loglik_curve = pickle.load(f)
                 loglik_curve = torch.stack(loglik_curve).detach().numpy()
                 df[model_name] = np.clip(loglik_curve, a_min=-10, a_max=None)
-                df[model_name] = df[model_name].ewm(alpha=0.0001).mean()
+                df[model_name] = df[model_name].ewm(alpha=SMOOTHING_ALPHA[model_type]).mean()
 
     epochs = np.arange(total_epochs)
     for i, max_context_point in enumerate(max_context_points):
