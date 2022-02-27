@@ -2,7 +2,7 @@
 
 Investigative project of my CST Part III Probabilistic Machine Learning (LE49) module 
 
-Report [here](https://github.com/VictorZXY/function-autoencoder-report/blob/main/probml-investigative-project-report-function-autoencoders.pdf)
+Report [here](https://victorzxy.github.io/project/function-autoencoders/Function-Autoencoders-Report.pdf)
 
 ### Abstract
 
